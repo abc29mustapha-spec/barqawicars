@@ -1,0 +1,129 @@
+name: barqawicars
+
+# ─── Local development ────────────────────────────────────────────────────────
+# Quick start: run `bash setup.sh` or see README.md
+#
+# Services:
+#   nginx   → http://localhost         (Laravel app)
+#   mailpit → http://localhost:8025    (email preview)
+#   mysql   → localhost:3306           (database)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PHP-FPM application ─────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      target: php-base         # dev: only extensions + composer, no baked code
+    volumes:
+      - .:/var/www/html        # live code reload without rebuilds
+      - /var/www/html/vendor   # keep vendor inside container (Linux paths)
+    environment:
+      APP_NAME: BarqawiCars
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: barqawicars
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: file
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM_ADDRESS: "hello@barqawi-cars.de"
+      MAIL_FROM_NAME: BarqawiCars
+      VITE_APP_NAME: BarqawiCars
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: php-fpm
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t 2>&1 | grep -q 'successful'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Nginx web server ────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── MySQL 8 database ────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: barqawicars
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"    # 3307 on host → avoids conflict with Herd's MySQL on 3306
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis (cache / optional queue backend) ──────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Vite dev server with HMR ────────────────────────────────────────────────
+  node:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules   # prevent Windows path conflicts
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_HOST: 0.0.0.0        # bind inside container
+      VITE_HMR_HOST: localhost   # browser connects here (Docker Desktop port-forward)
+      VITE_POLLING: "true"       # required for hot-reload on Docker volumes (Windows/macOS)
+    command: sh -c "npm ci && npm run dev"
+    restart: unless-stopped
+
+  # ── Mailpit (email testing UI) ──────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # Web UI → http://localhost:8025
+      - "1025:1025"   # SMTP
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  node_modules:

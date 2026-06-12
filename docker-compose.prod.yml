@@ -1,0 +1,91 @@
+name: barqawicars-prod
+
+# ─── Production deployment ────────────────────────────────────────────────────
+# Usage: docker compose -f docker-compose.prod.yml up -d
+#
+# Prerequisites:
+#   - .env file with production values (see DEPLOYMENT_GUIDE.md)
+#   - SSL certificates in docker/ssl/ (fullchain.pem, privkey.pem, chain.pem)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PHP-FPM + queue workers + scheduler (all in one via supervisord) ─────────
+  app:
+    build:
+      context: .
+      target: production       # full image: app code + compiled assets
+    env_file:
+      - .env                   # production secrets — never commit this file
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t 2>&1 | grep -q 'successful'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── Nginx reverse proxy with SSL ─────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt/live/barqawi-cars.de/fullchain.pem:/etc/ssl/certs/fullchain.pem:ro
+      - /etc/letsencrypt/live/barqawi-cars.de/privkey.pem:/etc/ssl/private/privkey.pem:ro
+      - /etc/letsencrypt/live/barqawi-cars.de/chain.pem:/etc/ssl/certs/chain.pem:ro
+      - /var/www/certbot:/var/www/certbot:ro   # for ACME challenges
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── MySQL 8 database ─────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis (cache + optional queue) ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save ""
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+  nginx_logs:

@@ -1,0 +1,38 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Dependencies (installed during Docker build)
+vendor/
+node_modules/
+
+# Dev & test artifacts
+.env
+.env.local
+*.log
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/public/*
+
+# Compiled assets (rebuilt in Docker)
+public/build/
+public/hot
+
+# Docker-related (avoid recursive copy)
+docker-compose*.yml
+Dockerfile
+docker/
+
+# Dev tooling
+.phpunit.cache
+.phpunit.result.cache
+tests/
+.editorconfig
+.php-cs-fixer.cache
+
+# OS
+.DS_Store
+Thumbs.db

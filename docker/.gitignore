@@ -1,0 +1,6 @@
+# SSL certificates (mounted at runtime on the server)
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
