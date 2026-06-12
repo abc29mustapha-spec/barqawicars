@@ -2,8 +2,109 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --color-navy:    #0D2D6D;
+    --color-navy-dk: #091D47;
+    --color-red:     #E30613;
 }
+
+/* ─── CSS Variables ───────────────────────────────────────────── */
+:root {
+    --navy:    #0D2D6D;
+    --navy-dk: #091D47;
+    --red:     #E30613;
+    --gray-bg: #F7F8FA;
+    --border:  #E8ECF0;
+}
+
+/* ─── Global selects ─────────────────────────────────────────── */
+select:not(.header-lang-select) {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 32px !important;
+    cursor: pointer;
+}
+
+/* ─── Status badges ──────────────────────────────────────────── */
+.status-new, .status-vendu    { background:#dbeafe; color:#1d4ed8; }
+.status-in_progress            { background:#fef9c3; color:#a16207; }
+.status-closed, .status-actif { background:#dcfce7; color:#15803d; }
+.status-cancelled              { background:#fee2e2; color:#b91c1c; }
+.status-inactif                { background:#f1f5f9; color:#475569; }
+
+/* ─── Animations ─────────────────────────────────────────────── */
+@keyframes fadeDown {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+.alert-anim { animation: fadeDown .25s ease; }
+
+/* ─── Admin sidebar ──────────────────────────────────────────── */
+.sidebar-scroll::-webkit-scrollbar { width:3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:4px; }
+
+/* ─── Spec badges ────────────────────────────────────────────── */
+.spec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--gray-bg);
+    color: #4B5563;
+    font-size: .7rem;
+    font-weight: 500;
+    padding: .25rem .65rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+}
+
+/* ─── Vehicle cards ──────────────────────────────────────────── */
+.vehicle-card {
+    transition: box-shadow .25s, transform .22s;
+}
+.vehicle-card:hover {
+    box-shadow: 0 16px 40px rgba(13,45,109,.1);
+    transform: translateY(-4px);
+}
+
+/* ─── Gallery thumbs ─────────────────────────────────────────── */
+.gallery-thumb { transition: opacity .15s, border-color .15s; cursor:pointer; }
+.gallery-thumb.active { border-color: var(--navy); opacity:1; }
+.gallery-thumb:not(.active) { opacity:.55; }
+.gallery-thumb:hover:not(.active) { opacity:.85; }
+
+/* ─── Pagination active page ─────────────────────────────────── */
+nav[role=navigation] span[aria-current=page] > span {
+    background: var(--navy) !important;
+    color: #fff !important;
+    border-color: var(--navy) !important;
+}
+
+/* ─── Body type strip (hero) ─────────────────────────────────── */
+.type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+    padding: .75rem .5rem;
+    flex: 1;
+    min-width: 58px;
+    font-size: .6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #9CA3AF;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, background .15s, border-color .15s;
+    cursor: pointer;
+}
+.type-btn:hover        { color: var(--navy); background: #F0F4FF; }
+.type-btn.active-type  { color: var(--navy); border-bottom-color: var(--navy); background: #EEF2FF; }

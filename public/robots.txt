@@ -1,2 +1,7 @@
 User-agent: *
-Disallow:
+Allow: /
+
+Disallow: /admin
+Disallow: /up
+
+Sitemap: https://barqawi-cars.de/sitemap.xml

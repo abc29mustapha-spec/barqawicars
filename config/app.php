@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'seo_lastmod' => env('SEO_LASTMOD', '2026-06-08'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
